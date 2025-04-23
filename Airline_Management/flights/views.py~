@@ -1,0 +1,172 @@
+from django.shortcuts import render
+from .models import Airport, Aircraft, FoodType, Flight, Crew, CrewAssignment, Passenger, Booking
+
+from django.shortcuts import render, get_object_or_404, redirect
+from .models import Airport, Aircraft, FoodType, Flight, Crew, CrewAssignment, Passenger, Booking
+from django.urls import reverse_lazy
+from django.views.generic import ListView, CreateView
+from .forms import PassengerForm, AircraftForm, FlightForm, CrewForm, AirportForm, BookingForm, CrewAssignmentForm
+from django.views.generic import DetailView
+from .models import Flight, Booking
+from django.views import View
+from django.views.generic import ListView
+from django.views.generic.edit import FormMixin
+
+def home(request):
+    raw_tables = [
+        ('Airports', list(Airport.objects.values())),
+        ('Aircraft', list(Aircraft.objects.values())),
+        ('Food Types', list(FoodType.objects.values())),
+        ('Flights', list(Flight.objects.values())),
+        ('Crew', list(Crew.objects.values())),
+        ('Crew Assignments', list(CrewAssignment.objects.values())),
+        ('Passengers', list(Passenger.objects.values())),
+        ('Bookings', list(Booking.objects.values())),
+    ]
+    return render(request, 'home.html', {
+        'raw_tables': raw_tables,
+        'er_image_url': 'images/er_diagram.png'
+    })
+
+
+def flight_schedule(request):
+    flights = Flight.objects.select_related(
+        'departure_airport', 'arrival_airport', 'aircraft', 'food_type'
+    ).all().order_by('flight_date', 'departure_time')
+    return render(request, 'flights/schedule.html', {'flights': flights})
+
+def pilot_assignments(request):
+    if request.method == 'POST':
+        form = CrewAssignmentForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('pilot_assignments')
+    else:
+        form = CrewAssignmentForm()
+
+    assignments = CrewAssignment.objects.select_related('crew','flight')\
+                      .filter(crew__position__iexact='Pilot')
+    return render(request, 'flights/pilots.html', {
+        'form': form,
+        'assignments': assignments,
+    })
+
+"""
+def crew_assignments(request):
+    if request.method == 'POST':
+        form = CrewAssignmentForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('crew_assignments')
+    else:
+        form = CrewAssignmentForm()
+
+    assignments = CrewAssignment.objects.select_related('crew','flight').all()
+    return render(request, 'flights/crew_assignments.html', {
+        'form': form,
+        'assignments': assignments,
+        'title': 'Crew Assignments'
+    })
+"""
+
+class CrewAssignmentListCreateView(FormMixin, ListView):
+    model               = CrewAssignment
+    form_class          = CrewAssignmentForm
+    template_name       = 'flights/crew_assignments.html'
+    context_object_name = 'assignments'
+    success_url         = reverse_lazy('crew_assignments')
+
+    def get_context_data(self, **kwargs):
+        # ListView.get_context_data добавя 'assignments'
+        context = super().get_context_data(**kwargs)
+        # FormMixin не слага form, затова:
+        context['form']  = self.get_form()
+        context['title'] = 'Crew Assignments'
+        return context
+
+    def post(self, request, *args, **kwargs):
+        form = self.get_form()
+        if form.is_valid():
+            form.save()
+            return redirect(self.success_url)
+        # ако има грешки – пак рендираме същата страница с errors
+        return self.get(request, *args, **kwargs)
+
+class PassengerCreate(CreateView):
+    model = Passenger
+    form_class = PassengerForm
+    template_name = 'flights/form.html'
+    success_url = reverse_lazy('flight_schedule')
+    def get_context_data(self, **ctx):
+        ctx = super().get_context_data(**ctx)
+        ctx['title'] = 'Добави Пътник'
+        return ctx
+
+class AircraftCreate(CreateView):
+    form_class    = AircraftForm
+    template_name = 'flights/form.html'
+    success_url   = reverse_lazy('home')
+    extra_context = {'title': 'Добави Самолет'}
+
+class FlightCreate(CreateView):
+    form_class    = FlightForm
+    template_name = 'flights/form.html'
+    success_url   = reverse_lazy('home')
+    extra_context = {'title': 'Добави Полет'}
+
+class CrewCreate(CreateView):
+    form_class    = CrewForm
+    template_name = 'flights/form.html'
+    success_url   = reverse_lazy('home')
+    extra_context = {'title': 'Добави Член на Екипажа'}
+
+class AirportCreate(CreateView):
+    form_class    = AirportForm
+    template_name = 'flights/form.html'
+    success_url   = reverse_lazy('home')
+    extra_context = {'title': 'Добави Летище'}
+
+class BookingCreate(CreateView):
+    form_class    = BookingForm
+    template_name = 'flights/form.html'
+    success_url   = reverse_lazy('home')
+    extra_context = {'title': 'Book a Flight'}
+
+class FlightBookingsView(DetailView):
+    model = Flight
+    template_name = 'flights/flight_bookings.html'
+    context_object_name = 'flight'
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['bookings'] = Booking.objects.filter(flight=self.object).select_related('passenger')
+        return ctx
+
+
+class BookFlightView(View):
+    """
+    GET: показва BookingForm със зададен initial flight_id
+    POST: записва резервацията и пренасочва към списъка с пътници
+    """
+    def get(self, request, flight_id):
+        flight = get_object_or_404(Flight, pk=flight_id)
+        form = BookingForm(initial={'flight': flight})
+        return render(request, 'flights/form.html', {
+            'form': form,
+            'title': f'Book Flight #{flight_id}'
+        })
+
+    def post(self, request, flight_id):
+        flight = get_object_or_404(Flight, pk=flight_id)
+        form = BookingForm(request.POST)
+        if form.is_valid():
+            form.save()
+            # След резервация – пренасочваме към списъка с пътници за този полет
+            return redirect('flight_bookings', pk=flight_id)
+        # ако не е валидна – пак рендираме формата със съобщения за грешки
+        return render(request, 'flights/form.html', {
+            'form': form,
+            'title': f'Book Flight #{flight_id}'
+        })
+
+

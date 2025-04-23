@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+  <h2 class="mb-4 text-center">📅 Flight Schedule</h2>
+
+  <table class="table table-striped table-bordered align-middle">
+    <thead class="table-dark">
+      <tr>
+        <th>Flight ID</th>
+        <th>Date</th>
+        <th>Departure Time</th>
+        <th>Departure Airport</th>
+        <th>Arrival Airport</th>
+        <th>Aircraft</th>
+        <th>Food Type</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for flight in flights %}
+      <tr>
+        <td>
+          <a href="{% url 'flight_bookings' flight.flight_id %}">
+            {{ flight.flight_id }}
+          </a>
+        </td>
+        <td>{{ flight.flight_date }}</td>
+        <td>{{ flight.departure_time }}</td>
+        <td>{{ flight.departure_airport.name }}</td>
+        <td>{{ flight.arrival_airport.name }}</td>
+        <td>{{ flight.aircraft.model }}</td>
+        <td>{{ flight.food_type.description }}</td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="7" class="text-center">No scheduled flights.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}

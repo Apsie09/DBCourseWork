@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% block content %}
+  <h2 class="mb-4 text-center">👷 Crew Assignments</h2>
+
+  <div class="row justify-content-center mb-4">
+    <div class="col-md-6">
+      <form method="post" novalidate>
+        {% csrf_token %}
+        {{ form.as_p }}
+        <div class="text-center">
+          <button type="submit" class="btn btn-success">Assign</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <table class="table table-striped table-bordered">
+    <thead class="table-dark">
+      <tr>
+        <th>Pilot Name</th>
+        <th>Flight ID</th>
+        <th>Date</th>
+        <th>Departure Time</th>
+        <th>Role</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for a in assignments %}
+      <tr>
+        <td>{{ a.crew.name }}</td>
+        <td>{{ a.flight.flight_id }}</td>
+        <td>{{ a.flight.flight_date }}</td>
+        <td>{{ a.flight.departure_time }}</td>
+        <td>{{ a.role }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="5" class="text-center">No assignments yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}

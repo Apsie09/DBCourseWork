@@ -1,0 +1,58 @@
+{# templates/flights/pilots.html #}
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row">
+  <!-- Лявата колона: формата за ново назначение -->
+  <div class="col-md-4">
+    <h2 class="mb-4 text-center">🔧 Assign Pilot</h2>
+    <form method="post" novalidate>
+      {% csrf_token %}
+      <div class="mb-3">
+        {{ form.crew.label_tag }}
+        {{ form.crew }}
+      </div>
+      <div class="mb-3">
+        {{ form.flight.label_tag }}
+        {{ form.flight }}
+      </div>
+      <div class="mb-3">
+        {{ form.role.label_tag }}
+        {{ form.role }}
+      </div>
+      <button type="submit" class="btn btn-success w-100">Assign</button>
+    </form>
+  </div>
+
+  <!-- Дясната колона: таблицата със съществуващи назначения -->
+  <div class="col-md-8">
+    <h2 class="mb-4 text-center">👨‍✈️ Pilot Assignments</h2>
+    <table class="table table-striped table-bordered align-middle">
+      <thead class="table-dark">
+        <tr>
+          <th>Pilot Name</th>
+          <th>Flight ID</th>
+          <th>Date</th>
+          <th>Departure Time</th>
+          <th>Role</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in assignments %}
+        <tr>
+          <td>{{ a.crew.name }}</td>
+          <td>{{ a.flight.flight_id }}</td>
+          <td>{{ a.flight.flight_date|date:"M d, Y" }}</td>
+          <td>{{ a.flight.departure_time|time:"P" }}</td>
+          <td>{{ a.role }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5" class="text-center">No pilot assignments yet.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

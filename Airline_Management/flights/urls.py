@@ -1,0 +1,22 @@
+from django.urls import path
+from . import views
+
+urlpatterns = [
+    path('schedule/', views.flight_schedule, name='flight_schedule'),
+   # path('pilots/', views.pilot_assignments, name='pilot_assignments'),
+
+    path('add/passenger/', views.PassengerCreate.as_view(), name='add_passenger'),
+    path('add/aircraft/', views.AircraftCreate.as_view(), name='add_aircraft'),
+    path('add/flight/', views.FlightCreate.as_view(), name='add_flight'),
+    path('add/crew/', views.CrewCreate.as_view(), name='add_crew'),
+    path('add/airport/', views.AirportCreate.as_view(), name='add_airport'),
+
+    path('add/booking/', views.BookingCreate.as_view(), name='add_booking'),
+
+    path('flight/<int:flight_id>/book/', views.BookFlightView.as_view(), name='book_flight'),
+    path('flight/<int:pk>/bookings/', views.FlightBookingsView.as_view(), name='flight_bookings'),
+
+    #path('assignments/', views.crew_assignments,  name='crew_assignments'),
+    path('assignments/', views.CrewAssignmentListCreateView.as_view(), name='crew_assignments'),
+
+]
